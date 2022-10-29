@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+		<title>Расчет стоимости проекта</title>
+		<link rel="stylesheet" href="css/main.css" />
+		<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,300i,400,700&display=swap&subset=cyrillic-ext" rel="stylesheet" />
+		<!-- <script src="https://smtpjs.com/v3/smtp.js"></script> -->
+		<!-- <script src="js/smtp.js"></script> -->
+	</head>
+
+	<?php
+	$pg_merchant_id = 545908;
+  $secret_key = 'IxTeRAhJJer97zdq';
+
+  $request = $requestForSignature = [
+    'pg_order_id' => '23',
+    'pg_merchant_id'=> $pg_merchant_id,
+    'pg_amount' => '25',
+    'pg_description' => 'test',
+    'pg_salt' => 'molbulak',
+    'pg_currency' => 'KZT',
+  ];
+
+/**
+ * Функция превращает многомерный массив в плоский
+ */  
+  function makeFlatParamsArray($arrParams, $parent_name = '')
+  {
+    $arrFlatParams = [];
+    $i = 0;
+    foreach ($arrParams as $key => $val) {
+      $i++;
+      /**
+       * Имя делаем вида tag001subtag001
+       * Чтобы можно было потом нормально отсортировать и вложенные узлы не запутались при сортировке
+       */
+      $name = $parent_name . $key . sprintf('%03d', $i);
+      if (is_array($val)) {
+        $arrFlatParams = array_merge($arrFlatParams, makeFlatParamsArray($val, $name));
+        continue;
+      }
+      $arrFlatParams += array($name => (string)$val);
+    }
+  
+    return $arrFlatParams;      
+
+  }
+
+// Превращаем объект запроса в плоский массив
+  $requestForSignature = makeFlatParamsArray($requestForSignature);
+
+// Генерация подписи
+  ksort($requestForSignature); // Сортировка по ключю
+  array_unshift($requestForSignature, 'init_payment.php'); // Добавление в начало имени скрипта
+  array_push($requestForSignature, $secret_key); // Добавление в конец секретного ключа
+
+  $request['pg_sig'] = md5(implode(';', $requestForSignature)); // Полученная подпись  
+
+	?>
+
+	<body>
+		<main class="calc-wrapper">
+			<div class="container">
+				<form action="#" id="form" class="form__body" novalidate>
+					<div class="heading">
+						<h1 class="heading-title">Калькулятор стоимости </h1>
+						<p class="heading-desc">Базовая цена: 1 мин = 250 тг</p>
+					</div>
+
+					<div class="calc-section">
+						<div class="name-content">
+							<label>
+								<span class="name-content__user-data">Имя<span class="required-field">*</span>:</span>
+								<input
+									type="text"
+									name="name"
+									id="name"
+									class="name-content__input validateInput"
+									placeholder="Введите имя..."
+									required
+								/>
+								<span class="error-message name-error"></span>
+							</label>
+
+							<label>
+								<span class="name-content__user-data">Почта<span class="required-field">*</span>:</span>
+								<input
+									type="email"
+									name="email"
+									id="email"
+									class="name-content__input validateInput"
+									placeholder="Введите e-mail..."
+									required
+								/>
+								<span class="error-message email-error"></span>
+							</label>
+
+							<label>
+								<span class="name-content__user-data">Номер телефона<span class="required-field">*</span>:</span>
+								<input
+									type="tel"
+									name="tel"
+									id="tel"
+									class="name-content__input validateInput"
+									placeholder="Введите номер телефона..."
+									required
+								/>
+								<span class="error-message tel-error"></span>
+							</label>
+						</div>
+					</div>
+
+					
+					<div id="input-upload-file" class="calc-section">
+						<span class="upload_btn">Загрузите ваше аудио<span class="required-field">*</span>: </span></br></br>
+						
+						<input type="file" class="upload validateInput" id="fileUp" name="fileUpload" required>
+						<span class="error-message fileUp-error"></span>
+					</div>
+					  <pre id="infos" class="filename-text"></pre>
+					<!-- Площадь -->
+					<!-- <div class="calc-section">
+						<label class="checkbox-wrapper title-bold section-title .section-title--vertical-center">
+							<span class="title__inline">Длительность аудио:</span>
+							<input type="number" min="0" max="180" value="1" id="square-input" class="title__inline input-short" /> 
+							<span class="title__inline" id="uploadvalitem">мин</span>
+						</label>
+						 <input type="range" id="square-range" class="range-input" min="0" max="180" value="1" step="1" /> 
+					</div> -->
+					<!-- // Площадь -->
+
+					<!-- Мобильная адаптивность -->
+					<div class="calc-section">
+						<h4 class="checkbox-wrapper title-bold section-title">Качество вашего аудио</h4>
+						<label class="radio-wrapper" data-name="mobile">
+							<input type="radio" class="radio" name="type" value="0" checked/>
+							<div class="title-lite">Хорошее</div>
+						</label>
+						<label class="radio-wrapper" data-name="mobile">
+							<input type="radio" class="radio" name="type" value="50"  />
+							<div class="title-lite">
+								<span>Среднее</span>
+								<span class="note">+50 тг/мин</span>
+							</div>
+						</label>
+						<label class="radio-wrapper" data-name="mobile">
+							<input type="radio" class="radio" name="type" value="100" />
+							<div class="title-lite">
+								<span>Плохое</span>
+								<span class="note">+100 тг/мин</span>
+							</div>
+						</label>
+					</div>
+					<!-- // Мобильная адаптивность -->
+
+					<!-- Мобильная адаптивность -->
+					<div class="calc-section">
+						<label class="checkbox-wrapper title-bold section-title"> Количество голосов в аудио </label>
+						<label class="radio-wrapper">
+							<input type="radio" class="radio" name="building" value="0" checked />
+							<div class="title-lite">1-2 участника</div>
+						</label>
+						<label class="radio-wrapper">
+							<input type="radio" class="radio" name="building" value="50" />
+							<div class="title-lite">
+								3-4 участника
+								<span class="note">+50 тг/мин</span>
+							</div>
+						</label>
+					</div>
+					<!-- // Мобильная адаптивность -->
+
+					<!-- Количество комнат -->
+					<div class="calc-section">
+						<label class="checkbox-wrapper title-bold section-title"> Дополнительные опции </label>
+						<div class="rooms-wrapper">
+							<label class="rooms-label">
+								<input class="rooms-radio-real" type="radio" name="rooms" value="0" checked/>
+									<div>
+										<span class="rooms-radio-fake">Обычное</span>
+										<span class="note">+0 тг/мин</span>
+									</div>
+							</label>
+
+							<label class="rooms-label">
+								<input class="rooms-radio-real" type="radio" name="rooms" value="100" />
+								<div>
+									<span class="rooms-radio-fake">Судебное</span>
+									<span class="note">+100 тг/мин</span>
+								</div>
+
+							</label>
+
+							<!-- <label class="rooms-label">
+								<input class="rooms-radio-real" type="radio" name="rooms" value="1" />
+								<span class="rooms-radio-fake">2</span>
+							</label>
+
+							<label class="rooms-label">
+								<input class="rooms-radio-real" type="radio" name="rooms" value="1.05" />
+								<span class="rooms-radio-fake">3</span>
+							</label>
+
+							<label class="rooms-label">
+								<input class="rooms-radio-real" type="radio" name="rooms" value="1.05" />
+								<span class="rooms-radio-fake">4</span>
+							</label>
+
+							<label class="rooms-label">
+								<input class="rooms-radio-real" type="radio" name="rooms" value="1.05" />
+								<span class="rooms-radio-fake">5</span>
+							</label> -->
+						</div>
+					</div>
+					<!-- // Количество комнат -->
+
+					<!-- Дополнительные опции -->
+					<div class="calc-section">
+						<label class="checkbox-wrapper title-bold section-title"> Срочность </label>
+						<label class="radio-wrapper">
+							<input type="checkbox" class="radio" name="ceiling" value="100" />
+							<div class="title-lite">
+								Срочно
+								<span class="note">+100 тг/мин</span>
+							</div>
+						</label>
+						<!-- <label class="radio-wrapper">
+							<input type="checkbox" class="radio" name="walls" value="1.1" />
+							<div class="title-lite">
+								Покраска стен
+								<span class="note">+10% к стоимости</span>
+							</div>
+						</label>
+						<label class="radio-wrapper">
+							<input type="checkbox" class="radio" name="floor" value="1.1" />
+							<div class="title-lite">
+								Теплый пол
+								<span class="note">+10% к стоимости</span>
+							</div>
+						</label> -->
+					</div>
+					<!-- // Дополнительные опции -->
+
+					<button type="submit" class="form__submit-button">Отправить данные</button>
+
+					<!-- <a href="https://api.paybox.money/payment.php?pg_merchant_id=545908&pg_amount=1000&pg_currency=KZT&pg_description=test&pg_salt=bFViQFrxt0hk1UbC&pg_language=ru&pg_sig=0d238e936102d6245e2f5474ab0226fa">Оплатить «test» через PayBox.money</a> -->
+
+					<!-- Стоимость ремонта -->
+					<div class="calc-price">
+						<div class="calc-price-title">Стоимость транскрибации:</div>
+						<div class="calc-price-value">
+							<span id="total-price">0</span>
+						</div>
+					</div>
+					<!-- // Стоимость ремонта -->
+				</form>
+			</div>
+		</main>
+		
+		<script src="./js/main.js"></script>
+		<script src="./js/validate.js"></script>
+		<script src="https://smtpjs.com/v3/smtp.js"></script>
+	</body>
+</html>
